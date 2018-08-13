@@ -15,7 +15,50 @@ ui<- fluidPage(titlePanel(title="TAMU Baseball Shiny App"),
                          mainPanel(plotOutput(outputId="BatterBoxPlot"))),
                 tabPanel("Hit visualization"),
                 tabPanel("Historical Pitching Data",
-                         sidebarPanel(selectInput(inputId="Pitcher_His","Pitcher:",choices=dataset$Pitcher)),
+                         sidebarPanel(radioButtons(inputId="selectpitcher", "Filter By Specific Pitcher?",
+                                                   choices = c("Yes", "No"),
+                                                   inline = TRUE, 
+                                                   selected = "No"),
+                                      conditionalPanel(
+                                        condition = "input.selectpitcher== 'Yes'",
+                                        selectizeInput(inputId="Pitcher_His","Pitcher:", choices=dataset$Pitcher,multiple=TRUE)),
+                                      
+                                      radioButtons(inputId="selectteam", "Filter By Specific Team?",
+                                                   choices = c("Yes", "No"),
+                                                   inline = TRUE, 
+                                                   selected = "No"),
+                                      conditionalPanel(
+                                        condition = "input.selectteam== 'Yes'",
+                                        selectizeInput(inputId="Team_His","Team:", choices=dataset$BatterTeam,multiple=TRUE),
+                                        uiOutput("ui")),
+                                      radioButtons(inputId="selectpitchtype", "Filter By Pitch Type?",
+                                                   choices = c("Yes", "No"),
+                                                   inline = TRUE, 
+                                                   selected = "No"),
+                                      conditionalPanel(
+                                        condition="input.selectpitchtype=='Yes'",
+                                        selectizeInput(inputId="pitchtype_m", "Select Pitch Type",
+                                        choices=unique(dataset$TaggedPitchType), multiple=TRUE)
+                                      ),
+                                      radioButtons(inputId="count", "Filter By Count?",
+                                                                choices = c("Yes", "No"),
+                                                                inline = TRUE, 
+                                                                selected = "No"),
+                                      conditionalPanel(
+                                        condition="input.count=='Yes'",
+                                        selectizeInput(inputId="balls","Balls",choices=c(0,1,2,3)),
+                                        selectizeInput(inputId="strikes","Strikes", choices=unique(dataset$Strikes))
+                                        ),
+                                      radioButtons(inputId="selectvel", "Filter By Velocity?",
+                                                   choices = c("Yes", "No"),
+                                                   inline = TRUE, 
+                                                   selected = "No"),
+                                      conditionalPanel(
+                                        condition="input.selectvel=='Yes'",
+                                      sliderInput(inputId="minvel",label="Pitch Veloity",0,100,0),
+                                      sliderInput(inputId="maxvel",label="Pitch Veloity",0,100,0)
+                                      )),
+                         
                          mainPanel(dataTableOutput(outputId="FrequencyofPitches"))
      )
 ))
@@ -23,8 +66,20 @@ ui<- fluidPage(titlePanel(title="TAMU Baseball Shiny App"),
 server<- function(input, output) {
   dataset<-read.csv("Shiny_dataset.csv")
   
+  
+  
+  output$ui <- renderUI({
+    if (is.null(input$Team_His))
+      return()
+    
+    batter_sub=dataset[dataset$BatterTeam==input$Team_His,]
+    "Team_His" = selectizeInput("batters", "Select Batter/s",
+                                        choices = unique(batter_sub$Batter),multiple=TRUE
+    )
+  })
+  
   output$FrequencyofPitches<-renderDataTable({
-    datatable(dataset)
+    dataset
     
   })
   
@@ -82,8 +137,8 @@ server<- function(input, output) {
       #plot(dataset2$PlateLocSide,dataset2$PlateLocHeight,col = c("blue", "yellow", "green","black", "red")[dataset2$Outcome])
       }
     
-    batterbox=plot(dataset2$PlateLocSide,dataset2$PlateLocHeight,col = c("blue", "yellow", "green","black", "red")[dataset2$Outcome],xlab="PlateLocSide",ylab="PlateLocHeight",xlim=c(-1.5,1.5), ylim=c(1,4))
-    legend("topright",legend=levels(dataset2$Outcome),col=c("blue","yellow","green", "black","red"),pch=1)
+    batterbox=plot(dataset2$PlateLocSide,dataset2$PlateLocHeight,col = c("blue", "yellow", "green","black", "red")[dataset2$Outcome_hit],xlab="PlateLocSide",ylab="PlateLocHeight",xlim=c(-1.5,1.5), ylim=c(1,4))
+    legend("topright",legend=levels(dataset2$Outcome_hit),col=c("blue","yellow","green", "black","red"),pch=1)
     rect(-0.83, 1.52, 0.83, 3.42,density=20, border="black", lty="dotted")
     
     
